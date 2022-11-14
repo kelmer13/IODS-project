@@ -1,4 +1,4 @@
-# Insert chapter 2 title here
+# Chapter 2: the plot thickens
 
 *Describe the work you have done this week and summarize your learning.*
 
@@ -10,4 +10,77 @@
 date()
 ```
 
-Here we go again...
+# Question 1: Reading the data
+
+I've read in the data using following command in my consle in RStudio:
+
+learning2014 <- read.table("https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/learning2014.txt",sep=",", header=TRUE)
+
+We have now loaded a data set, a table with 166 rows, and seven variables. The data shows information on 166 students, including their sex and age, some information on their general attitudes towards statistics, and also information about their points on an exam they took.
+
+The column "gender" describes their sex, male or female, while the column "age" is simply their age in years. The following columns describe their views on statistics, according to a specific scale, as well as averages of their views on key categories of questions in the survey. The final column is their score. 
+
+The students responded to questions on a Likert scale, a five point scale reflecting one's attitude, where: 
+
+  **1 = strongly disagree 
+  2 = disagree
+  3 = neither agree nor disagree 
+  4 = agree 
+  5 = strongly agree.**
+
+The column "attitude" is an average, or mean value, of all of their responses to the survey questions, in total. The column entitled "deep" represents the mean value of a subsection of the total questions, specifically 12 questions that have been designated "deep questions". By contrast, "surf" represents the mean response to 12 "surface level questions". And the column "stra" represents the mean response to "strategic questions". 
+
+The final column, "points", represents the students' score on an exam. ***However, please not that in this data, students with scores of zero on the exam have been removed!***
+
+To prove some of these basic facts using R Studio functions, I will now examine the structure of the data by using the following command in the console:
+
+  *str(learning2014)*
+
+The command tells us that the data learning2014 contains 166 objects across 7 variables, and lists them for us in the console, which I will not repeat here. 
+
+I will now examine the dimensions of the data using the following command in the console:
+
+  *dim(learning2014)*
+
+Similarly, the command yeilds a result that tells us the data has 166 rows, and 7 columns.
+
+# Question 2: Graphs
+
+## Graphical representation of learning2014 data
+
+Now, lets turn to some plots to analyse the data found in learning2014, and the relationships between different parts of the data. 
+
+First, a general scatter plot should suggest to the naked eye a rough correlation between a student's attitude, and their final score on the exam. Recall that lower numbers on the attitude scale, 1s and 2s, represent relatively bad attitudes, while 3 represents a neutral attitude, while 4s and 5s are students with a more positive attitude. Then, with a simple regression analysis, we can make the trend more clear: the more enthusiastic the student, the better their score. 
+
+```{r}
+learning2014 <- read.table("https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/learning2014.txt",sep=",", header=TRUE)
+library(ggplot2)
+p1 <- ggplot(learning2014, aes(x = attitude, y = points))
+p2 <- p1 + geom_point()
+p2
+p3 <- p2 + geom_smooth(method = "lm")
+p4 <- p3 + ggtitle("learning2014")
+p4
+
+```
+
+## Question 3: Correlations
+
+But what factors - age, sex, attitude (or any subdivision thereof, including responses to deep, surface level, or strategic questions)   has the greatest correalation with points received on the final exam? 
+
+An analysis of the correlations between the pairs of variables available to us shows that of all the possible pairings of variables, **students' *attitude* correlated most strongly with their score**, suggesting that other variables, including age and sex, did not have as strong an effect on their final score.
+
+```{r}
+learning2014 <- read.table("https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/learning2014.txt",sep=",", header=TRUE)
+library(ggplot2)
+pairs(learning2014[-1])
+library(GGally)
+library(ggplot2)
+p <- ggpairs(learning2014, mapping = aes(), lower = list(combo = wrap("facethist", bins = 20)))
+p
+
+```
+
+## Remaining questions
+
+Sorry, I was unable to get to the final parts of this assignment! I hope to be able to catch up eventually, but for now, this is as far as I managed to get!
