@@ -1,0 +1,135 @@
+---
+title: "chapter3"
+author: "Keegan"
+date: "2022-11-22"
+output: html_document
+---
+# Analysis 
+
+First, I will load a data package, provided by Kimmo Vehkalahti for assignment 3. See the R code below.
+
+### R code
+```{r}
+alc <- read.table("https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/alc.csv", sep = "," , header = TRUE)
+
+# Print out the names of the variables in the data 
+
+colnames(alc)
+```
+
+#### Description of the initial data
+The data set used for this exercise originally comes from not one data set, but two data sets combined into one. 
+
+The original two data sets are from surveys of Portuguese high school students from two different schools: Gabriel Pereira (or "GP" in the school column of the data), and Mousinho da Silveira (or "MS" in the school column). The data sets describe around two dozen categories of demographic criteria (including the size of their family, their sex, age, and address, or even their romantic relationship status and weekly alcohol consumption), as well the student's academic performance, including information about their number of school absences, and their grades in two different glasses: math, and Portuguese.  
+
+The combined data set retains most of the original variables of student information, but will be used here to primarily focus on the student's *alcohol consumption* and *how their alcohol consumption affects other factors*. 
+
+### What causes high, and low, alcohol consumption in these sets of Portugeuse high school students?
+
+The purpose of this analysis is to study the relationships between alcohol consumption and some of the other variables in the data. What causes high alcohol consumption? What causes low alcohol consumption? Does low alcohol consumption correlate with high academic performance? Or is alcohol, generally used as a social drug, a function of the student's relationship with friends, or family? 
+
+There are many possible explanations for a student's alcohol consumption. And while we have rather rich information about each student's personal life, we only have a limited number of data points. We might hypothesize that, for example, a student's family income level is a major predictor of alcohol consumption. One 2015 [study](https://www.teensavers.com/post/family-income-affects-teenage-drinking) from the UK showed that middle-income families were far more likely to consume alcohol than those of low-income families. Another [study](https://news.gallup.com/poll/184358/drinking-highest-among-educated-upper-income-americans.aspx) from the United States, also from 2015, showed that educated, upper-income Americans drink more than those in lower income brackets. 
+
+However, the data available does not show the student's income. We could, however, use proxy data that is, perhaps, related to a factor that we are interested in, like the parent's education level. We might speculate, reasonably, that higher levels of education in parents implies a higher income for the family. 
+
+For this analysis, we will explore a number of interesting factors, to see which has the greatest correlation with high alcohol consumption. Specifically, we will examine *high alcohol consumption* and how it is affected by the following four variables: 
+
+1) Parent's cohabitation status [Pstatus]
+2) Number of school absences [absences]
+3) Going out with friends [goout]
+4) Mother's education level [Medu]
+
+These variables were chosen to sample a variety of implied causal hypothesis:
+
+1) Parent's cohabitation status: students whose parents live apart will have a higher alcohol consumption rate than those whose parents live to together.
+2) Number of school absences: students with a higher number of absences from school will have a higher alchol consumption rate than those with a lower number of school absences. 
+3) Going out with friends: students who go out more with friends will have a higher alcohol consumption than those who go out less.
+4) Mother's education level: students whose mother has a higher education level will have a higher alcohol consumption rate than those whose mother has a lower education level.
+
+We should be wary, however, of the temptation to infer too much from our data. If we test for correlations between the education level of the parents, and the student's alcohol consumption, then ***we can only speak about the relationship between the two tested variables, and nothing else!*** Any other speculations would be nothing more than an educated guess, informed by our analysis of the data we have! 
+
+### Numerical and graphical exploration
+
+Our data has a category called "high_use", classifying the student either as someone who uses a high amount of alcohol, or not. To clarify, the definition of "high use" is based on other data, also given in the table. Essentially, "high use" is a student who has more than 2 drinks on average during both weekdays and weekends. Our data provides the number of drinks students have on weekdays, and the number of drinks they have on weekends. Their overall average alcohol use, another column provided in our data table, called "alc_use", is the average of their weekday and weekend, alcohol use. Those whose "alc_use" is greater than 2 are categorized as "high_use" students. We will therefore use the "high_use" category as a simple measure of whether the students consume high amounts of alcohol compared to their peers. 
+
+#### Variable 1: Parent's cohabitation status and student high alcohol consumption  
+
+"High alcohol use" is a binary category, and so is the first variable we are interested in examining: parent's cohabitation status. In the data, parent's cohabitation status is expressed as either 'T' for living together, or 'A' for living apart. To perform a simple comparison, we will use a cross table to visualize the two variables.
+
+
+```{r}
+
+table(high_use = alc$high_use, pstatus = alc$Pstatus)
+
+```
+
+First, note that a far greater number of students parents are together "T" than apart "A". However, through some simple arithmetic, we can see that 29.8 percent of those whose parents are together are high users alcohol, compared to a slightly higher while 31.6 percent of those whose parents are apart. This shows that the likelihood of high alcohol use is higher in those whose parents are apart, but not by much at all.
+
+#### Variable 2: Absences and student high alcohol consumption 
+
+One might expect those with high alcohol consumption to also have a high number of absences from school - either because students are out partying, rather than going to school, or perhaps lounging at home nursing a hangover!
+
+See the box plot below for a correlation of the number of absences from school along the y-axis, and whether the student is a high alcohol user - true or false - along the x-axis.
+
+```{r}
+
+library(ggplot2)
+g1 <- ggplot(alc, aes(x = high_use, y = absences))
+g1 + geom_boxplot() + ylab("absences")
+
+```
+
+As may have been expected, there is higher number of absences on average in high users, but not by much, however. The center black line of the box plot represents the 50th percentile for the group, and the 50th percentile is not much higher in the high user category than than the non-high users. However, there 75th percentile is significantly higher among high-users. 
+
+One might summarize by saying that *of* those students with a high number of absences, they are more likely to be high alcohol user. However, note that the highest outlier is actually in the false, non-high alcohol user, category, a trivial but nonetheless interesting detail. 
+
+#### Variable 3: Going out with friends
+
+Drinking is generally a social phenomenon, a social lubricant, as it were, and so it might be expected that the more high schoolers go out with friends, the more likely they are to drink a significant amount. Our data on how often students go out with friends is ranked on a five point scale, where 1 = very low and 5 = very high.
+
+
+```{r}
+library(magrittr)
+table(high_use = alc$high_use, goout = alc$goout) %>% addmargins() 
+
+```
+
+Here, we can see that of those who are high users of alcohol, here the TRUE values, 63 percent of them are either 4s or 5s on the "going out" scale, a strong correlation. By contrast, only 23 percent of non-heavy drinkers, those in the FALSE category, were 4s and 5s (those who go out with friends the most). "3" was the most common anwser among those who were not heavy drinkers, while "4" was teh most common answer among high alcohol users.
+
+#### Variable 4: Mother's education level and alcohol use 
+
+Mother's education level is a five-level numbered scale from 0 to 4, where 0 signifies no education, 1 represents a primary school level education (through 4th grade in Portugal), 2 represents a 5th through 9th grade education, 3 represents a secondary education and 4 represents higher education. The mother's education level could represent a number of factors, though the relationship to alcohol use is perhaps unclear. Again, we might speculate that mothers with higher education levels mean that students in these households have higher income, but this is merely a guess. 
+
+```{r}
+
+table(high_use = alc$high_use, goout = alc$Medu) %>% addmargins()
+
+```
+
+In both high use students, and non-high use students, mothers with higher education levels were the highest category. However, 65.8 percent of high use students had mothers with either a secondary or higher education level, while only 57.5 percent of non high use students had mothers with either a higher education or secondary education level. This indicates a marginally stronger correlation between mothers higher education level, and high use drinking. 
+
+#### Preliminary observations, reflection on hypothesis 
+
+Of all the variables, it appears that the whether students go out with friends has the highest correlation with high use of alcohol, followed by absences. This is somewhat surprising, considering all the possible variables, though it is difficult with these rudimentary means to compare the strength of correlations between each variable. 
+
+### Using logistic regression
+
+We will now use logistic regression to create a model of our data, asking about the relationship between high alcohol use and our four variables: parent status, absences, going out with friends and mother's education level. 
+
+#### Present and interpret a summary of the fitted model. 
+
+Below in the R code, we have entered our variables into a code that yields a logistic regression model. 
+
+```{r}
+
+m <- glm(high_use ~ Pstatus + absences + goout + Medu, data = alc, family = "binomial")
+
+summary(m)
+
+coef(m)
+
+```
+
+
+### Conclusion 
+...

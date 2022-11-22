@@ -1,5 +1,6 @@
 ---
 title: "IODS course project"
+author: "Keegan Elmer"
 output:
   html_document:
     theme: cosmo
@@ -25,6 +26,9 @@ output:
 ```
 
 ***
+  
+```{r child = "chapter3.Rmd"}
+```
 
-(more chapters to be added similarly as we proceed with the course!)
+***
 
