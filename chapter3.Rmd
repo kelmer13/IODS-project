@@ -4,7 +4,7 @@ author: "Keegan"
 date: "2022-11-22"
 output: html_document
 ---
-# Analysis 
+# Chapter 3: Analysis 
 
 First, I will load a data package, provided by Kimmo Vehkalahti for assignment 3. See the R code below.
 
