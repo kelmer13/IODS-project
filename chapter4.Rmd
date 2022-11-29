@@ -1,0 +1,210 @@
+---
+title: "chapter4"
+author: "Keegan"
+date: "2022-11-28"
+output: html_document
+---
+# Chapter 4: Clustering and Classification
+
+Due: Tue Nov 29 09:00 2022
+
+## 1. R markdown file created
+
+## 2. Loading the data, describing the data set
+
+In this exercise, we will use a data set describing aspects of the city of Boston, in the United States, in a study conducted in 1978 by Harrison and Rubinfeld. 
+
+
+```{r}
+
+library(MASS)
+library(tidyr)
+library(corrplot)
+data("Boston")
+
+```
+
+
+```{r}
+
+str(Boston)
+
+```
+The structure of the data, shown above, gives us a brief look at the data, and some of its values. The variables in the data are listed there along the left hand side. Here is a full read out of the data, so that you will be able to recognize the variables by their abbreviated names when they are used through this report: 
+
+crim
+per capita crime rate by town.
+
+zn
+proportion of residential land zoned for lots over 25,000 sq.ft.
+
+indus
+proportion of non-retail business acres per town.
+
+chas
+Charles River dummy variable (= 1 if tract bounds river; 0 otherwise).
+
+nox
+nitrogen oxides concentration (parts per 10 million).
+
+rm
+average number of rooms per dwelling.
+
+age
+proportion of owner-occupied units built prior to 1940.
+
+dis
+weighted mean of distances to five Boston employment centres.
+
+rad
+index of accessibility to radial highways.
+
+tax
+full-value property-tax rate per $10,000.
+
+ptratio
+pupil-teacher ratio by town.
+
+black
+1000(Bk - 0.63)^2 where Bk is the proportion of blacks by town.
+
+lstat
+lower status of the population (percent).
+
+medv
+median value of owner-occupied homes in $1000s.
+
+
+```{r}
+
+dim(Boston)
+
+```
+
+In total, the data table has 506 rows, and 14 columns. Each of the rows represents a town, while each of 14 variables describe one of the variables listed above, like the town's crime rate per capita (crim), average rooms per dwelling (rm), pupil-teacher ratio by town ("ptratio"), and other interesting demographic data.
+
+## 3. Graphical overview, description of relationships 
+
+### Graph: Plot Matix
+
+One way we can examine the data a bit further is by taking a look at a plot matrix, which will perform some simple calculations on our variables, pointing a range of factors including the maximum and minimum values and the mean. 
+
+```{r}
+
+library(MASS)
+data("Boston")
+summary(Boston)
+
+```
+
+Here we have a summary of some of the basic features of our data about Boston in the 1970s. Take a look at the first variable, "crim", or per capita crime rate by town. We can infer that in Boston, the vast majority of towns have a relatively low crime rate, while there are a small number of towns with much higher than average rates. The value for the first quantile, or lowest 25 percent of the data, is 0.0825. The mean is 3.61, and the third quantile - from 50 percent to 75 percent of the data - is just 3.67. Not much higher. The max, however, is 88.9, indicating that there is at least one neighborhood with a crime rate significantly higher than all the rest!
+
+### Graph: Correlation Matix
+
+Now we are going to look at the basic relationships between the variables using a correlation plot. The plot compares the correlation of each individual variable to the others, and tells us "for how much in the *increase* of one variable, do we get an *increase* or *decrease* in another variable?" Our correlation plot read out is a bit more fancy than usual, and has a color-coded legend on the right. 
+
+```{r}
+
+library(MASS)
+library(tidyr)
+library(corrplot)
+data("Boston")
+cor_matrix <- cor(Boston) 
+corrplot(cor_matrix, method="circle")
+
+```
+
+Deep blue represents strong correlations - one to one, that is - while deep red represents strong negative correlations - one to negative one. Have a look at the correlations for median value of owner-occupied homes in $1000s (medv). We can follow either along vertical medv row, or horizontal medv column. One strong blue dot lies on the intersection between "medv" and "rm", the average number of rooms per dwelling. This makes sense, as the higher the average housing value in a neighborhood, the more likely it is to have more rooms. There's a strong red dot in the medv column or row, which is its intersection with "lstat", or lower status of the population. In  Harrison and Rubinfeld's [study](https://deepblue.lib.umich.edu/bitstream/handle/2027.42/22636/0000186.pdf;jsessionid=467069C0C6838F993569E4E3EFA41722?sequence=1) lstat is defined thusly: the proportion of population that is lower status = 1/2 (proportion of adults without some high school education and proportion of male workers classified as laborers)
+
+## 4. Standardizing the data
+
+### Scaling the data
+
+Now that we understand a bit about what our data in Boston includes, we have a problem: even though all our data are measured as numerics, how can we better compare one measure to another across the data table? We have several different variables, each with their own wildly different number measure. Some measures of proportion range between zero and one, while other raw measures in other variable columns output in the hundreds. 
+
+We will therefore standardize our data by scaling it. Notice what happens to our values in our new scaled data table, using the function scale() in R.
+
+```{r, echo=FALSE}
+
+library(MASS)
+data("Boston")
+boston_scaled <- scale(Boston)
+summary(boston_scaled)
+class(boston_scaled)
+boston_scaled <- as.data.frame(boston_scaled)
+
+```
+
+Notice that our data have a much tighter absolute range in their values, across *all* variables in the data set. We can find no minimum, in any category less than -10, and no positive maximum value higher than 10. In fact, the highest maximum in our scaled data is 9.92, the maximum of "crim". In our previous data set, it was around 88.98. 
+
+The data as more "smooth", in a way, now that it is scaled, so that we can better compare variations in each variable of our data against oneanother. 
+
+### Changing "crim" from a numeric variable, to a categorical variable
+
+
+```{r}
+library(MASS)
+data("Boston")
+boston_scaled <- as.data.frame(scale(Boston))
+boston_scaled$crim <- as.numeric(boston_scaled$crim)
+summary(boston_scaled$crim)
+bins <- quantile(boston_scaled$crim)
+crime <- cut(boston_scaled$crim, breaks = bins, include.lowest = TRUE, labels = c("low", "med_low", "med_high", "high"))
+table(crime)
+boston_scaled <- dplyr::select(boston_scaled, -crim)
+boston_scaled <- data.frame(boston_scaled, crime)
+
+```
+
+We have divided our scaled variable "crim" into four quantiles (divisions into quaters), from lowest to highest. As you can see, they are evenly distributed. There are 127 neighborhoods in the "low" quantile, 126 in the "medium low" and "medium high" quantiles, and 127 in the "high" quantile. 
+
+### Testing and training the data
+
+Now that we've scaled our data, and tuned it a bit so that crime now has a categorical variable, we are going to essentially split our data into two parts. Once we have those parts, we will use them to see how well we can use data to make productions, and see how the "fit". 
+
+First, we will split the data in two, so that 80 percent of it will fit in the object "train" and the remaining 20 percent will be in the object "test". 
+
+```{r}
+
+library(MASS)
+boston_scaled <- read.table("https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/boston_scaled.txt",
+                            sep=",", header = T)
+ind <- sample(nrow(boston_scaled),  size = nrow(boston_scaled) * 0.8)
+train <- boston_scaled[ind,]
+test <- boston_scaled[-ind,]
+correct_classes <- test$crime
+test <- dplyr::select(test, -crime)
+
+```
+
+## 5. Linear discriminant 
+
+
+```{r}
+
+library(MASS)
+boston_scaled <- read.table("https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/boston_scaled.txt",
+                            sep=",", header = T)
+ind <- sample(nrow(boston_scaled),  size = nrow(boston_scaled) * 0.8)
+train <- boston_scaled[ind,]
+test <- boston_scaled[-ind,]
+correct_classes <- test$crime
+test <- dplyr::select(test, -crime)
+lda.fit = lda(crime ~ ., data=train)
+plot(lda.fit, dimen = 2)
+
+```
+
+
+## 6. Predict and cross tabulate
+
+
+### R code
+```{r}
+
+# lda.pred <- predict(lda.fit, 
+
+
+# table(
+
+```
