@@ -1,0 +1,113 @@
+---
+title: "chapter5.Rmd"
+author: "Keegan"
+date: "2022-12-06"
+output: html_document
+---
+
+# Assignment 5 
+
+First let's load up the data we'll need.
+
+```{r}
+
+library(dplyr)
+human <- read.table("https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/human2.txt", sep = ",", header = T)
+
+```
+
+We've narrowed the data down in our data wrangling exercise. This data comes from the UN Development Program's Human Development Index (HDI), and it has been paired down to simplify some of the missing pieces in the data. 
+
+## 1 Show a graphical overview of the data
+
+Let's take a look at what's inside our data file 'human'
+
+```{r}
+
+library(GGally)
+ggpairs(human)
+
+```
+Here we can see lots of interesting correlations in our data set. For example, note the strong correlation between variables like life expectancy, and the expected number of years of education. 
+
+```{r}
+
+summary(human)
+
+```
+Looking again at life expectancy, we can also see that the minimum average life expectancy is 49 years, while the maximum is 83.5.
+
+## 2. Perform principal component analysis (PCA)
+
+We will now use principle component analysis on the data, and summarize the findings.
+
+### principal component analysis for unscaled data
+
+First, we will take a look at the results using unscaled data. 
+
+```{r}
+
+pca_human <- prcomp(human)
+
+pca_summary <- summary(pca_human)
+
+pca_summary
+
+```
+
+### Draw a biplot displaying the observations
+
+Below we have created a biplot where, the first principle component is on the x-axis, and the second is on the y-axis.
+
+```{r}
+
+pca_percent <- round(1*pca_summary$importance[2, ], digits = 5)
+
+pca_percent
+
+```
+
+
+
+```{r}
+
+pc_lab <- paste0(names(pca_percent), " (", pca_percent, "%)")
+
+biplot(pca_human, cex = c(0.8, 1), col = c("grey40", "deeppink2"), xlab = pc_lab[1], ylab = pc_lab[2])
+
+```
+
+## 3. Standardize the variables in the human data and repeat the above analysis
+
+We will now perform the same operation, but this time we will standardize the variable, so that they are more easily comparable 
+
+
+```{r}
+
+human_standard <- scale(human)
+
+pca_human_standard <- prcomp(human_standard)
+
+summary_human_standard <- summary(pca_human_standard)
+
+summary_human_standard
+
+```
+
+```{r}
+
+pca_percent_standard <- round(1*summary_human_standard$importance[2, ], digits = 5)
+
+pca_percent_standard
+
+```
+
+```{r}
+
+pc_lab_standard <- paste0(names(pca_percent_standard), " (", pca_percent_standard, "%)")
+
+biplot(pca_human_standard, cex = c(0.8, 1), col = c("grey40", "deeppink2"), xlab = pc_lab_standard[1], ylab = pc_lab_standard[2])
+
+```
+
+Variables like life expectancy, expected years of education, and education experience, all go together nicely, as one might expect, while maternal mortality and adolescent birth rate go together, but in the opposite direction. 
