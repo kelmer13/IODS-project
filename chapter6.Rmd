@@ -1,0 +1,202 @@
+---
+title: "chapter6"
+author: "Keegan"
+date: "2022-12-13"
+output: html_document
+---
+
+# Analysis of Longitudinal Data
+
+## Part 1: Implement Chapter 8 MABS exercise, but with **RATS** data
+
+### 6.1 Meet and Repeat with RATS
+
+First, lets load up some libraries that we might need for these exercises... 
+
+```{r}
+
+library(tidyverse)
+library(tidyr)
+library(dplyr)
+library(GGally)
+library(corrplot)
+library(ggplot2)
+library(lme4)
+
+```
+
+
+#### Reading in the data...
+
+We are now going to read in some data about a study of three groups of rats, put on different diets, who were weighted (approximately) weekly over a nine-week period. Let's take a look at some basic features of the data. 
+
+```{r}
+RATS <- read.table("https://raw.githubusercontent.com/KimmoVehkalahti/MABS/master/Examples/data/rats.txt", header = TRUE, sep = '\t')
+
+names(RATS)
+str(RATS)
+summary(RATS)
+
+```
+
+The data looks comprehensible, but there are a few issues that will cause us trouble that need addressing. Our columns have weeks with day numbers on them, indicating when the rats were weighed, though they're in an awkward form that we will change. Here we should notice that this data is in a **wide** form, which could cause us some problems. We will convert it to **long** form below.
+
+
+### 6.2 Prepare for graphical display with a "pivot" 
+
+We will also add a variable called "Time" to adjust the given form of the time the rats were weight, which will use the day rather than the original week format. 
+
+```{r}
+
+RATSL <- pivot_longer(RATS, cols = -c(ID, Group), 
+                      names_to = "WD",
+                      values_to = "Weight") %>% 
+         mutate(Time = as.integer(substr(WD,3,4))) %>%
+         arrange(Time)
+
+```
+
+We will also change the problematic ID and Group variables to factors, instead of their original form of integers.
+
+```{r}
+
+RATSL$ID <- factor(RATSL$ID)
+RATSL$Group <- factor(RATSL$Group)
+
+```
+
+### 6.3 Individuals on the plot
+
+Now let's take a look at some plots of the data.
+
+```{r}
+
+library(ggplot2)
+ggplot(RATSL, aes(x = Time, y = Weight, linetype = ID)) +
+  geom_line() +
+  scale_linetype_manual(values = rep(1:10, times=4)) +
+  facet_grid(. ~ Group, labeller = label_both) +
+  theme(legend.position = "none") + 
+  scale_y_continuous(limits = c(min(RATSL$Weight), max(RATSL$Weight)))
+
+```
+
+Well, it looks like all rats gained weight over time, and there was one super heavy rat in group two!!
+
+### 6.4 Standardization
+
+Let's do that again, only this time, we are going to standardize the data to make things more comparable between groups. 
+
+```{r}
+
+library(dplyr)
+library(tidyr)
+
+RATSL <- RATSL %>%
+  group_by(Time) %>%
+  mutate(standardrats = (Weight - mean(Weight))/sd(Weight)) %>%
+  ungroup()
+
+glimpse(RATSL)
+
+```
+
+#### PLOT AGAIN!
+
+
+
+```{r}
+
+ggplot(RATSL, aes(x = Time, y = standardrats, col = ID, linetype = ID)) +
+  geom_line() +
+  scale_linetype_manual(values = rep(1:10, times=4)) +
+  facet_grid(. ~ Group, labeller = label_both) +
+  theme(legend.position = "none") + 
+  scale_y_continuous(limits = c(min(RATSL$standardrats), max(RATSL$standardrats)))
+
+```
+
+Now that the data has been standardized, we can see relative consistency within the groups (excluding, of course, our very large rat in group 2!)
+
+
+### 6.5 Summary graph
+
+We will now do another graph to take a look at the variation within the observations. 
+
+```{r}
+
+library(dplyr)
+library(tidyr)
+# Summary data with mean and standard error of bprs by treatment and week 
+RATSLS <- RATSL %>%
+  group_by(Group, Time) %>%
+  summarise( mean = mean(Weight), se = sd(Weight)/sqrt(Weight) ) %>%
+  ungroup()
+
+glimpse(RATSLS)
+
+library(ggplot2)
+ggplot(RATSLS, aes(x = Time, y = mean, col = Group)) +
+  geom_line() +
+  scale_linetype_manual(values = c(1,2,3)) +
+  geom_point(size=3) +
+  scale_shape_manual(values = c(1,2,3)) +
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se, linetype="1"), width=0.3) +
+  theme(legend.position = c(0.8,0.8)) +
+  scale_y_continuous(name = "mean(weight) +/- se(weight)")
+
+```
+
+### 6.6 Outliers lurking
+
+We are coming for you, fat rat... Let's take a closer look at the mean weights of all the rats.
+
+```{r}
+
+library(dplyr)
+library(tidyr)
+
+RATSLsum <- RATSL %>%
+  filter(Time > 1) %>%
+  group_by(Group, ID) %>%
+  summarise( mean=mean(Weight) ) %>%
+  ungroup()
+
+glimpse(RATSLsum)
+
+```
+
+And now with a box plot, we can see.
+
+```{r}
+library(ggplot2)
+ggplot(RATSLsum, aes(x = Group, y = mean)) +
+  geom_boxplot() +
+  stat_summary(fun = "mean", geom = "point", shape=23, size=4, fill = "white") +
+  scale_y_continuous(name = "mean(weight)")
+
+```
+
+There, at nearly 600, is the one outlier fat rat, distorting our precious data.... Sorry, you're going to get filtered out. 
+
+```{r}
+RATSLfiltered <- RATSLsum %>% filter(mean < 550)
+library(ggplot2)
+ggplot(RATSLfiltered, aes(x = Group, y = mean)) +
+  geom_boxplot() +
+  stat_summary(fun = "mean", geom = "point", shape=23, size=4, fill = "white") +
+  scale_y_continuous(name = "mean(weight)")
+```
+
+### 6.7 Anova
+
+```{r}
+RATSLfiltered <- RATSLsum %>% filter(mean < 550)
+library(ggplot2)
+ggplot(RATSLfiltered, aes(x = Group, y = mean)) +
+  geom_boxplot() +
+  stat_summary(fun = "mean", geom = "point", shape=23, size=4, fill = "white") +
+  scale_y_continuous(name = "mean(weight)")
+```
+
+
