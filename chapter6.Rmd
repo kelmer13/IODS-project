@@ -188,15 +188,20 @@ ggplot(RATSLfiltered, aes(x = Group, y = mean)) +
   scale_y_continuous(name = "mean(weight)")
 ```
 
-### 6.7 Anova
+### 6.7 Anova and t test
+
+First, the T test. 
 
 ```{r}
-RATSLfiltered <- RATSLsum %>% filter(mean < 550)
-library(ggplot2)
-ggplot(RATSLfiltered, aes(x = Group, y = mean)) +
-  geom_boxplot() +
-  stat_summary(fun = "mean", geom = "point", shape=23, size=4, fill = "white") +
-  scale_y_continuous(name = "mean(weight)")
+
+RATSLsum1 <- RATSLsum %>% filter(Group!=1)
+t.test(mean ~ Group, data = RATSLsum1, var.equal = TRUE)
+
 ```
 
+And now Anova
+
+(sorry I got stuck here)
+
+## Part 2: 
 
